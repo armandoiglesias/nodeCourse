@@ -20,7 +20,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use((req, res, next) => {
-  User.findById("5fdb6e731b56161b249e4a7e")
+  User.findById("5ff4b1e531b84d3ec8eee9d4")
     .then(user => {
       req.user = new User(user.name, user.email, user.cart, user._id);
       next();
@@ -39,5 +39,8 @@ mongoConnect( () =>{
   //console.log(mongoClient)
   app.listen(3000);
 } );
+
+// docker run --name localmongo -p 27017:27017 -d mongo
+// double check userId
 
 
