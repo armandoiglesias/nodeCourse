@@ -1,28 +1,110 @@
 const mongoose = require('mongoose');
 
+const Order = require('../models/order');
+
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
-    required : true
+    required: true
   },
-  email:{
+  email: {
     type: String,
     required: true
   },
-  cart:{
+  cart: {
     items: [{
-      productId : {
-        type : mongoose.Schema.Types.ObjectId,
+      productId: {
+        type: mongoose.Schema.Types.ObjectId,
         ref: 'Product',
         required: true
       },
-      quantity : {
+      quantity: {
         type: Number,
         required: true
       }
     }]
   }
 });
+
+userSchema.methods.addToCart = function (product) {
+  let newQuantity = 1;
+  //this.cart = null;
+  if (this.cart == null) {
+    this.cart = {
+      items: []
+    };
+  }
+  const updatedCartItems = [...this.cart.items];
+  const cartProductIndex = this.cart.items.findIndex(cp => {
+    console.log(cp.productId, " ", product._id)
+    return cp.productId.toString() === product._id.toString()
+  });
+
+  if (cartProductIndex != -1) {
+    newQuantity = this.cart.items[cartProductIndex].quantity + 1;
+    updatedCartItems[cartProductIndex].quantity = newQuantity;
+  } else {
+    updatedCartItems.push({
+      productId: product._id,
+      quantity: newQuantity
+    });
+  }
+
+  const updatedCart = {
+    items: updatedCartItems
+  };
+
+  this.cart = updatedCart;
+  return this.save();
+
+}
+
+userSchema.methods.getCart = function () {
+
+  return this
+    .populate('cart.items.productId')
+    .execPopulate();
+}
+
+userSchema.methods.removeFromCart = function (productId) {
+  const updatedCartItems = this.cart.items.filter(item => {
+    return item.productId.toString() !== productId.toString();
+  });
+
+  this.cart.items = updatedCartItems;
+  return this.save();
+}
+
+userSchema.methods.addOrder = function () {
+
+  return this.getCart().then(user => {
+    let products = user.cart.items.map(x => {
+      return {
+        quantity: x.quantity,
+        productId: x.productId._id
+      };
+    });
+
+    return new Order({
+      userId: user._id,
+      products: products
+    }).save();
+
+  }).then(result => {
+    //console.log(result);
+    this.cart = {
+      items: []
+    };
+
+    return this.save();
+  }).catch(err => console.log(err));
+
+}
+
+userSchema.methods.getOrders = function () {
+  return  Order
+    .find({ "userId" : this.id }).populate("products.productId");
+}
 
 module.exports = mongoose.model('User', userSchema);
 
