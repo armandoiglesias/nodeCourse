@@ -8,8 +8,6 @@ exports.getProducts = (req, res, next) => {
         prods: products,
         pageTitle: 'All Products',
         path: '/products',
-        isAuthenticated : req.session.user
-
       });
     })
     .catch(err => {
@@ -25,7 +23,6 @@ exports.getProduct = (req, res, next) => {
         product: product,
         pageTitle: product.title,
         path: '/products',
-        isAuthenticated : req.session.user
 
       });
     })
@@ -39,7 +36,6 @@ exports.getIndex = (req, res, next) => {
         prods: products,
         pageTitle: 'Shop',
         path: '/',
-        isAuthenticated : req.session.user
       });
     })
     .catch(err => {
@@ -59,7 +55,6 @@ exports.getCart = (req, res, next) => {
             path: '/cart',
             pageTitle: 'Your Cart',
             products: products,
-            isAuthenticated : req.session.user
           });
         })
     
@@ -89,33 +84,39 @@ exports.postCart = (req, res, next) => {
 
 exports.postCartDeleteProduct = (req, res, next) => {
   const prodId = req.body.productId;
-  req.session.user.removeFromCart(prodId)
+  User.findById(req.session.user).then( user =>{
+    user.removeFromCart(prodId)
     .then(result => {
       res.redirect('/cart');
     })
+  } )
+
     .catch(err => console.log(err));
 };
 
 exports.postOrder = (req, res, next) => {
   let fetchedCart;
-  req.session.user
+  User.findById(req.session.user).then( user =>{
+    user
     .addOrder()
     .then( result =>{
       res.redirect("/orders");
-    } )
+    } );
+  } )
     .catch(err => console.log(err));
 };
 
 exports.getOrders = (req, res, next) => {
-  req.session.user
+  User.findById(req.session.user).then( user =>{
+    user
     .getOrders()
     .then(orders => {
       res.render('shop/orders', {
         path: '/orders',
         pageTitle: 'Your Orders',
         orders: orders,
-        isAuthenticated : req.session.user
       });
     })
-    .catch(err => console.log(err));
+  })
+  .catch(err => console.log(err));
 };

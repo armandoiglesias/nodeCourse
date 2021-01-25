@@ -1,5 +1,8 @@
 const path = require('path');
 
+const csurf = require('csurf');
+const flash = require('connect-flash');
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
@@ -21,6 +24,8 @@ const store = new MongoDbSession({
   collection :"sessions"
 });
 
+const cprotection = csurf({});
+
 app.set('view engine', 'ejs');
 app.set('views', 'views');
 
@@ -37,14 +42,15 @@ app.use(session({
   store : store
 }));
 
-// app.use((req, res, next) => {
-//   User.findById("5ff61dc0f8df9732ec3cc7cd")
-//     .then(user => {
-//       req.user = user;
-//       next();
-//     })
-//     .catch(err => console.log(err));
-// });
+app.use(cprotection);
+app.use(flash());
+
+
+app.use( (req,res,next)=>{
+  res.locals.isAuthenticated = req.session.isLoggedIn;
+  res.locals.csrfToken = req.csrfToken();
+  next();
+});
 
 app.use('/admin', adminRoutes);
 app.use(shopRoutes);
@@ -52,22 +58,24 @@ app.use(authRoutes);
 
 app.use(errorController.get404);
 
+
 mongoose.connect(MONGO_DB_URI).then(
   connection => {
-    User.findOne().then(user => {
-      if (!user) {
-        const user = new User({
-          name: 'Admin II',
-          email: 'correo@correo.com',
-          cart: {
-            items: []
-          }
-        });
-        user.save()
-          .then(result => console.log(result));
-      }
-    });
- 
+    // User.findOne().then(user => {
+    //   if (!user) {
+    //     const user = new User({
+    //       name: 'Admin II',
+    //       email: 'correo@correo.com',
+    //       password: '1234',
+    //       cart: {
+    //         items: []
+    //       }
+    //     });
+    //     user.save()
+    //       .then(result => console.log(result));
+    //   }
+    // });
+
     app.listen(3000);
   }
 ).catch(err => console.error(err));
